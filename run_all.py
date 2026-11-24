@@ -63,6 +63,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--skip-smoke", action="store_true", help="스모크 테스트 건너뛰기")
     ap.add_argument("--torch-tag", help="torch wheel 태그 직접 지정 (예: cu121, cu126, cu128)")
+    ap.add_argument("--llm", action="store_true", help="KoBART 대신 EXAONE+LoRA 용으로 설치·스모크 테스트")
     args = ap.parse_args()
 
     step("1/5 가상환경")
@@ -97,7 +98,7 @@ def main():
                 "  3) 드라이버는 있는데 안 되면 태그 직접 지정: python run_all.py --torch-tag cu121")
 
     step("3/5 패키지")
-    run([PY, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
+    run([PY, "-m", "pip", "install", "-q", "-r", "requirements-llm.txt" if args.llm else "requirements.txt"])
 
     step("4/5 데이터 준비")
     if (ROOT / "data/processed/train.jsonl").exists():
@@ -106,16 +107,21 @@ def main():
         run([PY, "src/prepare_data.py"])
 
     if not args.skip_smoke:
-        step("5/5 스모크 테스트 (50 step)")
-        run([PY, "src/train.py", "--max_steps", "50", "--max_samples", "500",
-             "--output_dir", "outputs/smoke"])
+        step("5/5 스모크 테스트")
+        if args.llm:   # 모델 다운로드(약 5GB)와 로딩 때문에 첫 실행은 오래 걸린다
+            run([PY, "src/train_llm.py", "--max_steps", "20", "--max_samples", "200",
+                 "--output_dir", "outputs/smoke-llm"])
+        else:
+            run([PY, "src/train.py", "--max_steps", "50", "--max_samples", "500",
+                 "--output_dir", "outputs/smoke"])
     else:
         print("\n5/5 스모크 테스트 건너뜀")
 
     py = ".venv\\Scripts\\python" if os.name == "nt" else ".venv/bin/python"
+    suffix = "_llm" if args.llm else ""
     print("\n준비 끝. 본 학습과 평가는 직접 실행:")
-    print(f"  {py} src/train.py")
-    print(f"  {py} src/evaluate.py")
+    print(f"  {py} src/train{suffix}.py")
+    print(f"  {py} src/evaluate{suffix}.py")
 
 
 if __name__ == "__main__":

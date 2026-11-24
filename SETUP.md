@@ -16,7 +16,22 @@ python run_all.py --torch-tag cu121    # torch CUDA 태그 직접 지정 (자동
 ```
 아래는 단계별 수동 실행 방법이다.
 
-## 1. 환경 만들기
+## EXAONE + LoRA (LLM 버전)
+KoBART 대신 `LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct`에 LoRA를 붙여 학습한다. 데이터(`prepare_data.py` 결과)는 KoBART와 같이 쓴다.
+```bash
+python run_all.py --llm                       # transformers>=5, peft 설치 + 20 step 스모크 테스트
+.venv\Scripts\python src/train_llm.py         # 본 학습 (3 epoch, 설정: configs/exaone_lora.yaml)
+.venv\Scripts\python src/evaluate_llm.py      # 평가. KoBART evaluate.py 와 같은 지표
+.venv\Scripts\python src/infer_llm.py "씨발 존나 덥네"
+```
+- 결과: `outputs/exaone-lora/best/` (LoRA 어댑터 + 토크나이저, 수십 MB). 베이스 모델은 첫 실행 때 HF에서 약 5GB 받는다.
+- `evaluate_llm.py`는 모든 테스트 행의 입력/정답/출력을 `eval_test_all.csv`로 저장한다 (엑셀에서 필터링해서 읽기).
+- OOM(메모리 부족)이면 `configs/exaone_lora.yaml`에서 `batch_size: 4`, `grad_accum: 8`로 바꾼다.
+- 비교 기준(KoBART)과 같은 `eval_test.json` 형식이라 숫자를 바로 나란히 볼 수 있다.
+- 라이선스: EXAONE은 비상업(연구) 라이선스다.
+- 모델 로딩에서 에러가 나면 `transformers` 버전부터 확인한다 (EXAONE 3.5 커스텀 코드는 5.x용으로 갱신된 판이 필요하다).
+
+## 1. 환경 만들기 (KoBART 버전)
 ```bash
 git clone <이 폴더를 옮긴 곳>   # 또는 폴더째 복사
 cd 욕감지\ 봇
