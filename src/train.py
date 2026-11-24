@@ -1,6 +1,6 @@
 """EXAONE-3.5-2.4B + LoRA 순화 학습.
 
-python src/train.py [--config configs/exaone_lora.yaml] [--max_steps 30] [--max_samples 200]
+python src/train.py [--config configs/exaone_lora.yaml] [--max_steps 30] [--max_samples 200] [--resume]
 결과: outputs/exaone-lora/best/ (LoRA 어댑터 + 토크나이저, 수십 MB)
 """
 import argparse
@@ -14,6 +14,7 @@ import yaml
 from peft import LoraConfig, get_peft_model
 from torch.utils.data import Dataset
 from transformers import EarlyStoppingCallback, Trainer, TrainingArguments, set_seed
+from transformers.trainer_utils import get_last_checkpoint
 
 from common import ROOT, read_jsonl
 from llm_common import encode_example, load_base, load_tokenizer, pick_dtype
@@ -48,6 +49,7 @@ def main():
     ap.add_argument("--max_steps", type=int, default=-1)
     ap.add_argument("--max_samples", type=int, default=0)
     ap.add_argument("--output_dir", default=None)
+    ap.add_argument("--resume", action="store_true", help="마지막 체크포인트에서 이어서 학습")
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
@@ -79,7 +81,9 @@ def main():
     total = args.max_steps if args.max_steps > 0 else math.ceil(len(train_ds) / eff_bs) * t["epochs"]
     strategy = ({"eval_strategy": "steps", "save_strategy": "steps",
                  "eval_steps": args.max_steps, "save_steps": args.max_steps}
-                if args.max_steps > 0 else {"eval_strategy": "epoch", "save_strategy": "epoch"})
+                if args.max_steps > 0 else
+                {"eval_strategy": "steps", "save_strategy": "steps",   # 중간에 꺼져도 --resume 으로 이어가기 위해
+                 "eval_steps": t["save_steps"], "save_steps": t["save_steps"]})
 
     targs = TrainingArguments(
         output_dir=str(out / "checkpoints"),
@@ -96,7 +100,10 @@ def main():
         model=model, args=targs, train_dataset=train_ds, eval_dataset=valid_ds,
         data_collator=make_collate(tok.pad_token_id), processing_class=tok,
         callbacks=[EarlyStoppingCallback(early_stopping_patience=t["patience"])])
-    trainer.train()
+    last = get_last_checkpoint(str(out / "checkpoints")) if args.resume else None
+    if args.resume:
+        print(f"이어서 학습: {last}" if last else "체크포인트가 없어 처음부터 시작")
+    trainer.train(resume_from_checkpoint=last)
 
     best = out / "best"
     trainer.save_model(str(best))          # peft 모델이라 어댑터만 저장된다
