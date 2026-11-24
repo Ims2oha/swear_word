@@ -1,0 +1,35 @@
+seed: 42
+
+data:
+  kotox_repo: ssgyejin/KOTOX
+  kotox_files:
+    train: data/total/train.csv
+    valid: data/total/valid.csv
+    test: data/total/test.csv
+  kda_repo: minkyeongjeon/kda-dataset
+  kda_file: kda_ko.csv
+  raw_dir: data/raw
+  processed_dir: data/processed
+  min_len: 2
+  max_len: 200
+  identity_max_frac: 0.25      # 각 split에서 identity(정상->정상) 쌍 최대 비율
+  kda_split: [0.9, 0.05, 0.05] # KOTOX와 안 겹치는 K/DA 문장 그룹의 train/valid/test 비율
+
+model:
+  name: gogamza/kobart-base-v2
+  max_source_len: 128
+  max_target_len: 128
+
+train:
+  output_dir: outputs/kobart-detox
+  lr: 5.0e-5
+  epochs: 10
+  batch_size: 32
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  patience: 3
+  fp16: auto                   # auto = CUDA 있으면 켬
+
+eval:
+  num_beams: 4
+  batch_size: 64

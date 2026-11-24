@@ -1,0 +1,8 @@
+torch
+transformers>=4.46
+accelerate
+huggingface_hub
+pandas
+numpy
+sacrebleu
+pyyaml

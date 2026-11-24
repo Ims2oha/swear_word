@@ -1,0 +1,17 @@
+# 데이터: prepare_data.py가 HF에서 다시 받아 만든다 (K/DA는 CC-BY-NC라 재배포 금지)
+data/raw/
+data/processed/
+
+# 학습 결과물 (체크포인트·모델·평가 결과)
+outputs/
+
+# 파이썬
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# HF 캐시, 에디터
+.cache/
+.idea/
+.vscode/
