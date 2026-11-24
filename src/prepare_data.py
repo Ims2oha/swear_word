@@ -1,6 +1,6 @@
 """K/DA + KOTOX 순화 쌍 데이터 준비.
 
-python src/prepare_data.py [--config configs/kobart.yaml] [--skip-unk-check]
+python src/prepare_data.py [--config configs/exaone_lora.yaml]
 출력: data/processed/{train,valid,test}.jsonl, data/processed/stats.json
 필드: input, target, source(kotox|kda), type(toxic|obfuscated|identity), group(정상 문장, split 단위)
 """
@@ -16,7 +16,7 @@ import pandas as pd
 import yaml
 from huggingface_hub import hf_hub_download
 
-from common import ROOT, load_tokenizer, write_jsonl
+from common import ROOT, write_jsonl
 from preprocess import clean_input, clean_target
 
 # LLM 거절·메타 문구 (일반 한국어 "할 수 없다" 같은 표현은 넣지 않음)
@@ -91,23 +91,9 @@ def cap_identity(rows, frac: float, rng: random.Random):
     return out
 
 
-def unk_report(rows, tok):
-    stat = {}
-    for typ in ("toxic", "obfuscated", "identity"):
-        texts = [r["input"] for r in rows if r["type"] == typ]
-        if not texts:
-            continue
-        ids = tok(texts, add_special_tokens=False, return_token_type_ids=False)["input_ids"]
-        total = sum(len(x) for x in ids)
-        unk = sum(sum(1 for i in x if i == tok.unk_token_id) for x in ids)
-        stat[typ] = {"tokens": total, "unk": unk, "unk_ratio": round(unk / max(total, 1), 5)}
-    return stat
-
-
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default=str(ROOT / "configs" / "kobart.yaml"))
-    ap.add_argument("--skip-unk-check", action="store_true")
+    ap.add_argument("--config", default=str(ROOT / "configs" / "exaone_lora.yaml"))
     args = ap.parse_args()
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
     d, seed = cfg["data"], cfg["seed"]
@@ -164,9 +150,6 @@ def main():
                        "by_source": dict(Counter(r["source"] for r in rows))}
                    for s, rows in splits.items()},
     }
-    if not args.skip_unk_check:
-        tok = load_tokenizer(cfg["model"]["name"])
-        stats["unk_train_input"] = unk_report(splits["train"], tok)
     (out_dir / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(stats, ensure_ascii=False, indent=2))
 

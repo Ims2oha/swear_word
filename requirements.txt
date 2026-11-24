@@ -1,8 +1,8 @@
 torch
-transformers>=4.46
+transformers>=5.0
+peft
 accelerate
 huggingface_hub
 pandas
-numpy
 sacrebleu
 pyyaml

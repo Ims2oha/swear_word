@@ -6,14 +6,8 @@
 타깃: 이모지 삭제, 공백 정리만.
 """
 import re
-import unicodedata
 
 _HANGUL = "가-힣ㄱ-ㅎㅏ-ㅣ"
-# KoBART 토크나이저는 단독 자모(ㅋ, ㅅ, ㅏ)를 조합용 자모(ᄏ, ᄉ, ᅡ)로 바꿔서 내보낸다.
-# 출력에서 호환 자모로 되돌리기 위한 표. 초성 19개 + 중성 21개.
-_CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"
-_JAMO_TO_COMPAT = {0x1100 + i: ord(c) for i, c in enumerate(_CHO)}
-_JAMO_TO_COMPAT.update({0x1161 + i: 0x314F + i for i in range(21)})
 _EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⭐⭕️‍]")
 _INNER_SPECIAL = re.compile(rf"(?<=[{_HANGUL}])[^\w\s?!~]+(?=[{_HANGUL}])")
 _WS = re.compile(r"\s+")
@@ -31,11 +25,6 @@ def clean_input(text) -> str:
     text = _EMOJI.sub("", _s(text))
     text = _INNER_SPECIAL.sub("", text)
     return _WS.sub(" ", text).strip()
-
-
-def restore_jamo(text: str) -> str:
-    """모델 출력의 조합용 자모를 호환 자모로 복원 (ᄏᄏ -> ㅋㅋ). 조합 가능한 건 먼저 음절로 합친다(NFC)."""
-    return unicodedata.normalize("NFC", text).translate(_JAMO_TO_COMPAT)
 
 
 if __name__ == "__main__":
