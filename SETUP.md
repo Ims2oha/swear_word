@@ -2,6 +2,14 @@
 
 학습은 12GB GPU 머신에서 한다. 이 PC(CPU)에서는 데이터 준비까지만 가능하다.
 
+## 한 번에 실행
+clone 후 `run.bat` 더블클릭, 또는:
+```bash
+python run_all.py              # venv, torch(CUDA 자동 선택), 데이터, 스모크, 학습, 평가
+python run_all.py --skip-smoke # 스모크 테스트 건너뛰기
+```
+끝난 단계는 건너뛰고, 실패하면 그 자리에서 멈춘다. 아래는 단계별 수동 실행 방법이다.
+
 ## 1. 환경 만들기
 ```bash
 git clone <이 폴더를 옮긴 곳>   # 또는 폴더째 복사
