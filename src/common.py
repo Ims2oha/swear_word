@@ -10,6 +10,8 @@ from pathlib import Path
 
 from transformers import PreTrainedTokenizerFast
 
+from preprocess import restore_jamo
+
 BOS_ID, EOS_ID, PAD_ID = 0, 1, 3
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -40,7 +42,7 @@ def decode(tok, ids) -> str:
         if i in (BOS_ID, EOS_ID, PAD_ID) or i < 0:
             continue
         out.append(i)
-    return tok.decode(out, skip_special_tokens=True).strip()
+    return restore_jamo(tok.decode(out, skip_special_tokens=True).strip())
 
 
 def read_jsonl(path):
