@@ -5,10 +5,16 @@
 ## 한 번에 실행
 clone 후 `run.bat` 더블클릭, 또는:
 ```bash
-python run_all.py              # venv, torch(CUDA 자동 선택), 데이터, 스모크, 학습, 평가
-python run_all.py --skip-smoke # 스모크 테스트 건너뛰기
+python run_all.py                      # venv, torch(CUDA 자동 선택), 패키지, 데이터, 스모크 테스트
+python run_all.py --skip-smoke         # 스모크 테스트 건너뛰기
+python run_all.py --torch-tag cu121    # torch CUDA 태그 직접 지정 (자동 선택이 안 될 때)
 ```
-끝난 단계는 건너뛰고, 실패하면 그 자리에서 멈춘다. 아래는 단계별 수동 실행 방법이다.
+끝난 단계는 건너뛰고, 실패하면 그 자리에서 멈춘다. 본 학습과 평가는 포함되지 않으니 이어서 직접 실행한다:
+```bash
+.venv\Scripts\python src/train.py      # Linux: .venv/bin/python
+.venv\Scripts\python src/evaluate.py
+```
+아래는 단계별 수동 실행 방법이다.
 
 ## 1. 환경 만들기
 ```bash
