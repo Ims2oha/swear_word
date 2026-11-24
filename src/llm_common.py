@@ -32,22 +32,9 @@ def load_tokenizer(name_or_path, trust_remote_code: bool):
     return tok
 
 
-def _expose_embeddings(model):
-    """EXAONE 커스텀 코드에는 get_input_embeddings 가 없어 peft/체크포인팅이 실패한다.
-    임베딩 층(transformer.wte)의 위치를 직접 알려준다."""
-    inner = getattr(model, "transformer", None)
-    if inner is None or not hasattr(inner, "wte"):
-        return
-    emb = inner.wte
-    for m in (model, inner):
-        m.get_input_embeddings = lambda emb=emb: emb
-
-
 def load_base(model_cfg: dict, dtype):
-    model = AutoModelForCausalLM.from_pretrained(
+    return AutoModelForCausalLM.from_pretrained(
         model_cfg["name"], trust_remote_code=model_cfg["trust_remote_code"], dtype=dtype)
-    _expose_embeddings(model)
-    return model
 
 
 def build_prompt(tok, template: str, text: str) -> str:

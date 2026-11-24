@@ -16,8 +16,10 @@ data:
   kda_split: [0.9, 0.05, 0.05] # KOTOX와 안 겹치는 K/DA 문장 그룹의 train/valid/test 비율
 
 model:
-  name: LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct
-  trust_remote_code: true            # EXAONE 3.5 는 커스텀 코드 필요
+  # EXAONE-3.5-2.4B-Instruct 를 표준 Llama 구조로 변환한 판 (같은 가중치·토크나이저·챗 템플릿).
+  # 원본(LGAI-EXAONE/...)은 커스텀 코드가 transformers 버전과 안 맞아서 쓰지 않는다.
+  name: beomi/EXAONE-3.5-2.4B-Instruct-Llamafied
+  trust_remote_code: false
   max_seq_len: 320
   max_new_tokens: 96
   prompt: "다음 문장에서 욕설·비속어·혐오 표현을 순화해서 다시 써줘. 이미 깨끗한 문장은 그대로 써줘.\n문장: {text}"
@@ -26,8 +28,8 @@ lora:
   r: 16
   alpha: 32
   dropout: 0.05
-  # EXAONE 레이어 이름: 어텐션 q/k/v/out_proj, MLP c_fc_0/c_fc_1/c_proj
-  target_modules: [q_proj, k_proj, v_proj, out_proj, c_fc_0, c_fc_1, c_proj]
+  # Llama 레이어 이름: 어텐션 q/k/v/o_proj, MLP gate/up/down_proj
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
 
 train:
   output_dir: outputs/exaone-lora

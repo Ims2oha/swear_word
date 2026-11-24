@@ -1,6 +1,7 @@
 # 설치 및 실행 방법 (GPU 머신 기준)
 
-욕설·비속어를 순화하는 모델을 `LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct` + LoRA로 학습한다.
+욕설·비속어를 순화하는 모델을 EXAONE-3.5-2.4B-Instruct + LoRA로 학습한다.
+베이스 모델은 표준 Llama 구조로 변환된 `beomi/EXAONE-3.5-2.4B-Instruct-Llamafied`를 쓴다 (원본의 커스텀 코드가 transformers 버전과 안 맞아서).
 학습은 12GB GPU 머신에서 한다. CPU만 있는 PC에서는 데이터 준비까지만 가능하다.
 
 ## 한 번에 실행
@@ -53,9 +54,9 @@ python src/evaluate.py
 - 모델은 git에 올리지 말고 `best/` 폴더를 직접 복사하거나 HF Hub에 따로 올린다.
 
 ## 문제 해결
-- 모델 로딩 에러: `transformers` 버전부터 확인한다. EXAONE 3.5 커스텀 코드는 5.x용으로 갱신된 판이 필요하다.
+- 모델 로딩 에러: `configs/exaone_lora.yaml`의 `model.name`과 `lora.target_modules`가 짝이 맞는지 확인한다 (Llama 구조: q/k/v/o/gate/up/down_proj).
 - `nvidia-smi`를 못 찾음: NVIDIA 드라이버가 없거나 NVIDIA GPU가 아닌 것이다. 드라이버 설치 후 재부팅한다.
 
 ## 사용 전 확인
 - K/DA 데이터는 CC-BY-NC-4.0 (비상업). 사용 전 저자 폼 작성을 요청하고 있다: https://forms.gle/WDECRuuH328jw93L6
-- KOTOX는 MIT, EXAONE은 비상업(연구) 라이선스다.
+- KOTOX는 MIT, EXAONE(변환판 포함)은 비상업(연구) 라이선스다.
