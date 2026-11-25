@@ -10,6 +10,8 @@ from collections import defaultdict
 from preprocess import clean_input, clean_target
 
 INTENS_SRC = re.compile(r"(너무|진짜|정말|완전|엄청)\s")
+HANGUL = re.compile("[가-힣]")
+LAUGH = re.compile(r"^(하하+|허허+|히히+|호호+|흐흐+|헐+|헤헤+)[.!?~]*$")  # 웃음·감탄 어절 (앞에 강조어를 넣지 않음)
 
 # (입력 틀, 정답 틀). {S}=욕설, {R}=순화어. 정답 틀에 {R}이 있으면 순화어가 있는 항목에만 쓴다.
 NOUN_FRAMES = [
@@ -55,13 +57,62 @@ def surface(entry, rng, p_var=0.35):
     return word
 
 
-def _rec(inp, tgt, group):
+def _rec(inp, tgt, group, typ="synthetic"):
     return dict(input=clean_input(inp), target=clean_target(tgt), source="synthetic",
-                type="synthetic", group=clean_target(group))
+                type=typ, group=clean_target(group))
+
+
+def _intens(lex, rng):
+    """강조 욕설 하나와 뒤에 붙일 간격 ('개'는 다음 말에 붙여 쓰는 경우가 많다)."""
+    s = surface(rng.choice(lex["intens"]), rng, 0.3)
+    return s, ("" if s == "개" and rng.random() < 0.6 else " ")
+
+
+def gen_multi(lex, neutrals, rng):
+    """한 문장에 욕설 2~3개. 정답은 원래 정상 문장.
+    모델이 첫 번째 욕만 고치고 나머지는 남기는 문제를 줄이려는 용도다."""
+    n = rng.choice(neutrals)
+    body, ops = n, ["insult", "interj_pre", "interj_post"]
+    if INTENS_SRC.search(body):
+        ops.append("intens_swap")
+    if len(body.split(" ")) >= 2:
+        ops.append("intens_insert")
+    k = rng.choice([2, 2, 3])
+    if len(ops) < k:
+        return None
+    chosen = set(rng.sample(ops, k))
+    if {"interj_pre", "interj_post"} <= chosen:       # 앞뒤 둘 다 감탄 욕설이면 어색해서 하나만
+        chosen.discard("interj_post")
+        if len(chosen) < 2:
+            return None
+    if "intens_swap" in chosen:                        # 너무/진짜/... 자리를 강조 욕설로
+        m = INTENS_SRC.search(body)
+        s, glue = _intens(lex, rng)
+        body = body[:m.start()] + s + glue + body[m.end():]
+    if "intens_insert" in chosen:                      # 마지막 내용 어절(대개 서술어) 앞에 강조 욕설
+        words = body.split(" ")
+        idx = [i for i, w in enumerate(words) if HANGUL.search(w) and not LAUGH.match(w)]
+        if not idx:
+            return None
+        s, glue = _intens(lex, rng)
+        words[idx[-1]] = s + glue + words[idx[-1]]
+        body = " ".join(words)
+    pre, post = "", ""
+    if "interj_pre" in chosen:
+        pre += surface(rng.choice(lex["interj"]), rng, 0.4) + " "
+    if "insult" in chosen:
+        e = rng.choice(lex["insult"] + lex["group"])
+        p = "야 {S}, " if e in lex["group"] else rng.choice(INSULT_PREFIX)
+        pre += p.replace("{S}", surface(e, rng))
+    if "interj_post" in chosen:
+        post = " " + surface(rng.choice(lex["interj"]), rng, 0.4)
+    return _rec(pre + body + post, n, n, typ="multi")
 
 
 def gen_one(kind, lex, neutrals, rng):
     """kind 별로 합성 쌍 하나. 만들 수 없으면 None."""
+    if kind == "multi":
+        return gen_multi(lex, neutrals, rng)
     if kind == "interj_neutral":
         n = rng.choice(neutrals)
         s = surface(rng.choice(lex["interj"]), rng, 0.4)
@@ -108,8 +159,8 @@ def gen_one(kind, lex, neutrals, rng):
 
 
 # 종류별 비율 (합 1.0)
-MIX = [("interj_neutral", 0.22), ("insult_neutral", 0.22), ("intens_swap", 0.14),
-       ("noun_frame", 0.22), ("family", 0.04), ("phrase", 0.16)]
+MIX = [("interj_neutral", 0.18), ("insult_neutral", 0.18), ("intens_swap", 0.12),
+       ("noun_frame", 0.19), ("family", 0.03), ("phrase", 0.15), ("multi", 0.15)]
 
 
 def make_synthetic(neutrals, lex, n, rng, existing):

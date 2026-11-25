@@ -18,7 +18,7 @@ from llm_common import load_for_inference, rewrite
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-TYPES = ["toxic", "obfuscated", "identity", "synthetic", "llm"]
+TYPES = ["toxic", "obfuscated", "identity", "synthetic", "multi", "llm"]
 PROFANITY = ["씨발", "시발", "ㅅㅂ", "ㅆㅂ", "병신", "ㅂㅅ", "개새끼", "좆", "존나", "졸라", "지랄", "썅", "미친놈", "미친년"]
 
 
