@@ -2,7 +2,7 @@
 
 python src/prepare_data.py [--config configs/exaone_lora.yaml]
 출력: data/processed/{train,valid,test}.jsonl, data/processed/stats.json
-필드: input, target, source(kotox|kda), type(toxic|obfuscated|identity), group(정상 문장, split 단위)
+필드: input, target, source(kotox|kda|synthetic|llm), type(toxic|obfuscated|identity|synthetic|llm), group(정상 문장, split 단위)
 """
 import argparse
 import hashlib
@@ -17,7 +17,7 @@ import yaml
 from huggingface_hub import hf_hub_download
 
 from augment import load_lexicon, make_synthetic
-from common import ROOT, write_jsonl
+from common import ROOT, read_jsonl, write_jsonl
 from preprocess import clean_input, clean_target
 
 # LLM 거절·메타 문구 (일반 한국어 "할 수 없다" 같은 표현은 넣지 않음)
@@ -156,6 +156,27 @@ def main():
             splits[s] = [r for r in rows if seen_g.setdefault(r["group"], s) == s]
         for rows in splits.values():
             rng.shuffle(rows)
+
+    # 4.6) 로컬 LLM 으로 만든 순화 쌍 (src/build_llm_pairs.py). 없으면 건너뛴다
+    extra = d.get("extra_pairs")
+    if extra and (ROOT / extra).exists():
+        # 이미 어떤 split 에 있는 group 은 그 split 으로, 아니면 group 해시로 정한다 (누수 방지)
+        taken = {r["group"]: s for s, rows in splits.items() for r in rows}
+        existing = {(r["input"], r["target"]) for rows in splits.values() for r in rows}
+        added = Counter()
+        for r in read_jsonl(ROOT / extra):
+            if (r["input"], r["target"]) in existing:
+                drops["llm_duplicate"] += 1
+                continue
+            existing.add((r["input"], r["target"]))
+            s = taken.setdefault(r["group"], hash_split(r["group"], seed, d["kda_split"]))
+            splits[s].append(dict(input=r["input"], target=r["target"], source="llm", type="llm", group=r["group"]))
+            added[s] += 1
+        for s in splits:
+            drops[f"llm_added:{s}"] = added[s]
+            rng.shuffle(splits[s])
+    elif extra:
+        print(f"[extra_pairs] {extra} 없음, 건너뜀")
 
     # 5) 누수 검사 + 저장
     groups = {s: {r["group"] for r in rows} for s, rows in splits.items()}
