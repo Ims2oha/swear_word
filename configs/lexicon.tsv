@@ -1,0 +1,72 @@
+# 합성 데이터용 어휘. 탭으로 구분: 분류  표현  순화어  변형(쉼표, 선택)
+# interj  : 문장 앞에 붙는 감탄 욕설 (순화어 없음, 삭제)
+# intens  : 강조 부사 (너무/진짜/정말/완전/엄청 자리에 들어감)
+# insult  : 사람에게 하는 욕 (순화어가 있으면 치환, 없으면 삭제)
+# group   : 집단 비하 표현 (중립 표현으로 치환)
+# family  : "네 엄마 ~" 틀에 쓰는 가족 비하 표현
+# phrase  : 문장 단위 욕 -> 순화 표현
+interj	씨발		시발,씨팔,씨바,ㅅㅂ,ㅆㅂ,시1발,씨1발,씨이발
+interj	아 씨발		아 시발,아 ㅅㅂ
+interj	지랄		ㅈㄹ
+interj	와 씨발		와 시발,와 ㅅㅂ
+interj	미친		ㅁㅊ
+interj	아 좆같네		아 ㅈ같네
+intens	존나		ㅈㄴ,존1나
+intens	졸라		졸1라
+intens	개
+intens	겁나
+intens	씨발		ㅅㅂ,시발
+intens	미친듯이
+insult	병신	바보	븅신,ㅂㅅ,병1신
+insult	등신	바보	둥신
+insult	멍청이	바보
+insult	개새끼	나쁜 사람	개색기,개새1끼,ㄱㅅㄲ
+insult	새끼
+insult	미친놈	이상한 사람	미친넘,ㅁㅊㄴ
+insult	미친년	이상한 사람	ㅁㅊㄴ
+insult	또라이	이상한 사람	돌아이
+insult	쓰레기	나쁜 사람	쓰렉
+insult	찐따	소심한 사람	찌질이
+insult	머저리	어리석은 사람
+insult	걸레	나쁜 사람
+insult	창녀	나쁜 사람
+insult	창년	나쁜 사람
+insult	개고아	외톨이
+insult	고아	외톨이
+insult	씹새끼	나쁜 사람	씹새1끼
+insult	좆밥	별 볼 일 없는 사람
+group	한남충	남자	한남,한남2
+group	한녀	여자
+group	김치녀	여자	김치년
+group	된장녀	여자	된장년
+group	짱깨	중국인	짱개
+group	쪽바리	일본인	쪽발이,왜놈
+group	흑형	흑인
+group	똥남아	동남아 사람
+group	틀딱	노인	틀딱충
+group	맘충	엄마
+group	급식충	학생
+group	개독	기독교인
+group	메갈	여성
+group	게이	동성애자	씹게이
+group	홍어	전라도 사람
+family	창녀
+family	창년
+family	걸레
+phrase	닥쳐	조용히 해줘	닥쳐라,닥치라고,ㄴㅈ
+phrase	꺼져	저리 가줘	꺼지라고
+phrase	뒤져	그만 좀 해
+phrase	죽어	그만 좀 해
+phrase	지랄하네	왜 그러니	지랄한다
+phrase	지랄 좀 하지 마	그만 좀 해
+phrase	엿먹어	그만 좀 해
+phrase	좆까	그만 좀 해
+phrase	좆같네	마음에 안 드네
+phrase	씨발놈아	야 너 왜 그래	씨발놈
+phrase	야 이 새끼야	야 너 왜 그래
+phrase	느금마	그런 말은 하지 마	니애미,니미
+phrase	꼴값 떨지 마	잘난 척하지 마
+phrase	눈깔 안 깔아?	똑바로 봐
+phrase	아가리 닥쳐	조용히 해줘
+phrase	개같네	별로네
+phrase	좆나 웃기네	정말 웃기네

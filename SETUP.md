@@ -37,7 +37,8 @@ python src/evaluate.py
 ## 데이터
 - `prepare_data.py`가 HF에서 KOTOX와 K/DA를 받아 `data/raw/`에 저장하고, `data/processed/{train,valid,test}.jsonl`을 만든다.
 - `data/`와 `outputs/`는 `.gitignore`에 들어 있어 git에 안 올라간다. clone한 곳에서 이 명령을 한 번 돌려 데이터를 새로 만든다.
-- 시드 고정이라 어느 머신에서 돌려도 같은 split이 나온다. 기준 결과: train 14,588 / valid 1,658 / test 1,629쌍.
+- 시드 고정이라 어느 머신에서 돌려도 같은 split이 나온다. 기준 결과: train 20,205 / valid 1,898 / test 1,866쌍 (합성 쌍 포함).
+- 합성 쌍(`type=synthetic`): `configs/lexicon.tsv`의 욕설 어휘를 정상 문장에 끼우거나 고정 틀에 넣어 만든다. 공개 데이터에 없는 욕설을 모델이 지우지 않고 순화하게 하려는 용도다. 어휘를 늘리려면 이 파일에 줄을 추가하고 `data/` 폴더를 지운 뒤 `prepare_data.py`를 다시 돌린다. 끄려면 `data.augment.enabled: false`.
 
 ## 학습 설정 (`configs/exaone_lora.yaml`)
 - LoRA r=16, lr 2e-4, 3 epoch, 실질 배치 32 (`batch_size 8 × grad_accum 4`).
@@ -50,7 +51,8 @@ python src/evaluate.py
 - `outputs/exaone-lora/train_log.json` : loss 기록.
 - `outputs/exaone-lora/eval_test.json` : type별 chrF, BLEU, 정상문 유지율, 욕설 잔존율.
 - `outputs/exaone-lora/eval_test_all.csv` : 테스트 전 행의 입력/정답/출력. 엑셀에서 `type`으로 필터링해서 직접 읽어본다.
-- 학습 중간에 죽으면 `best/`가 없고 `checkpoints/`에만 남는다.
+- 학습 중간에 죽으면 `best/`가 없고 `checkpoints/`에만 남는다. 100 step마다 저장되며 `train.py --resume`으로 이어서 학습한다.
+- 데이터를 다시 만들었으면 옛 `checkpoints/`는 지우고 처음부터 학습한다 (`--resume`은 옛 데이터 기준 체크포인트를 잇는다).
 - 모델은 git에 올리지 말고 `best/` 폴더를 직접 복사하거나 HF Hub에 따로 올린다.
 
 ## 문제 해결

@@ -16,6 +16,7 @@ import pandas as pd
 import yaml
 from huggingface_hub import hf_hub_download
 
+from augment import load_lexicon, make_synthetic
 from common import ROOT, write_jsonl
 from preprocess import clean_input, clean_target
 
@@ -136,6 +137,25 @@ def main():
     # 4) identity 비율 제한
     rng = random.Random(seed)
     splits = {s: cap_identity(rows, d["identity_max_frac"], rng) for s, rows in splits.items()}
+
+    # 4.5) 어휘 사전 기반 합성 쌍 (욕설 커버리지 확장). split 별로 그 split 의 정상 문장만 쓴다
+    aug = d.get("augment") or {}
+    if aug.get("enabled"):
+        lex = load_lexicon(ROOT / aug["lexicon"])
+        for s in splits:
+            neutrals = sorted({r["group"] for r in splits[s]})
+            existing = {(r["input"], r["target"]) for r in splits[s]}
+            syn = make_synthetic(neutrals, lex, aug["n"][s], random.Random(f"{seed}:{s}"), existing)
+            own = set(neutrals)
+            # 정상 문장에서 만든 쌍은 그 split, 고정 틀 쌍은 group 해시가 가리키는 split 에만 둔다
+            syn = [r for r in syn if r["group"] in own or hash_split(r["group"], seed, d["kda_split"]) == s]
+            splits[s] += syn
+            drops[f"synthetic_added:{s}"] = len(syn)
+        seen_g = {}
+        for s, rows in splits.items():          # 같은 group 이 여러 split 에 생기면 먼저 만든 split 만 남긴다
+            splits[s] = [r for r in rows if seen_g.setdefault(r["group"], s) == s]
+        for rows in splits.values():
+            rng.shuffle(rows)
 
     # 5) 누수 검사 + 저장
     groups = {s: {r["group"] for r in rows} for s, rows in splits.items()}

@@ -14,6 +14,10 @@ data:
   max_len: 200
   identity_max_frac: 0.25      # 각 split에서 identity(정상->정상) 쌍 최대 비율
   kda_split: [0.9, 0.05, 0.05] # KOTOX와 안 겹치는 K/DA 문장 그룹의 train/valid/test 비율
+  augment:                     # 어휘 사전으로 만드는 합성 쌍 (사전에 없는 욕설을 지우지 않고 순화하게)
+    enabled: true
+    lexicon: configs/lexicon.tsv
+    n: {train: 6000, valid: 400, test: 400}
 
 model:
   # EXAONE-3.5-2.4B-Instruct 를 표준 Llama 구조로 변환한 판 (같은 가중치·토크나이저·챗 템플릿).
