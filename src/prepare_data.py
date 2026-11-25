@@ -1,6 +1,6 @@
 """K/DA + KOTOX 순화 쌍 데이터 준비.
 
-python src/prepare_data.py [--config configs/exaone_lora.yaml]
+python src/prepare_data.py [--config configs/kanana_lora.yaml]
 출력: data/processed/{train,valid,test}.jsonl, data/processed/stats.json
 필드: input, target, source(kotox|kda|synthetic|llm), type(toxic|obfuscated|identity|synthetic|llm), group(정상 문장, split 단위)
 """
@@ -94,7 +94,7 @@ def cap_identity(rows, frac: float, rng: random.Random):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default=str(ROOT / "configs" / "exaone_lora.yaml"))
+    ap.add_argument("--config", default=str(ROOT / "configs" / "kanana_lora.yaml"))
     args = ap.parse_args()
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
     d, seed = cfg["data"], cfg["seed"]

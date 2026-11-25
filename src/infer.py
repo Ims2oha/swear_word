@@ -14,8 +14,8 @@ sys.stdout.reconfigure(encoding="utf-8")
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("texts", nargs="*")
-    ap.add_argument("--adapter", default=str(ROOT / "outputs" / "exaone-lora" / "best"))
-    ap.add_argument("--config", default=str(ROOT / "configs" / "exaone_lora.yaml"))
+    ap.add_argument("--adapter", default=str(ROOT / "outputs" / "kanana-lora" / "best"))
+    ap.add_argument("--config", default=str(ROOT / "configs" / "kanana_lora.yaml"))
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))

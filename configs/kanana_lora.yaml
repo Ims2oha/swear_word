@@ -21,9 +21,9 @@ data:
   extra_pairs: data/llm_pairs/llm_pairs.jsonl  # 로컬 LLM 생성 쌍 (src/build_llm_pairs.py). 없으면 건너뜀
 
 model:
-  # EXAONE-3.5-2.4B-Instruct 를 표준 Llama 구조로 변환한 판 (같은 가중치·토크나이저·챗 템플릿).
-  # 원본(LGAI-EXAONE/...)은 커스텀 코드가 transformers 버전과 안 맞아서 쓰지 않는다.
-  name: beomi/EXAONE-3.5-2.4B-Instruct-Llamafied
+  # 카카오 Kanana-1.5 2.1B Instruct (Apache-2.0, Llama 구조). 공개·배포가 자유로운 베이스.
+  # transformers 5.4+ 에서 config 검사에 걸리는 문제는 src/llm_common.py 에서 우회한다.
+  name: kakaocorp/kanana-1.5-2.1b-instruct-2505
   trust_remote_code: false
   max_seq_len: 320
   max_new_tokens: 96
@@ -37,7 +37,7 @@ lora:
   target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
 
 train:
-  output_dir: outputs/exaone-lora
+  output_dir: outputs/kanana-lora
   lr: 2.0e-4
   epochs: 3
   batch_size: 8                      # 12GB 기준. OOM 이면 4 로, grad_accum 은 8 로

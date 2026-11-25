@@ -1,7 +1,7 @@
-"""EXAONE-3.5-2.4B + LoRA 순화 학습.
+"""Kanana-1.5-2.1B + LoRA 순화 학습.
 
-python src/train.py [--config configs/exaone_lora.yaml] [--max_steps 30] [--max_samples 200] [--resume]
-결과: outputs/exaone-lora/best/ (LoRA 어댑터 + 토크나이저, 수십 MB)
+python src/train.py [--config configs/kanana_lora.yaml] [--max_steps 30] [--max_samples 200] [--resume]
+결과: outputs/kanana-lora/best/ (LoRA 어댑터 + 토크나이저, 수십 MB)
 """
 import argparse
 import json
@@ -45,7 +45,7 @@ def make_collate(pad_id):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default=str(ROOT / "configs" / "exaone_lora.yaml"))
+    ap.add_argument("--config", default=str(ROOT / "configs" / "kanana_lora.yaml"))
     ap.add_argument("--max_steps", type=int, default=-1)
     ap.add_argument("--max_samples", type=int, default=0)
     ap.add_argument("--output_dir", default=None)

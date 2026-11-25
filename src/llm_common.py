@@ -1,16 +1,22 @@
-"""LLM(EXAONE) + LoRA 공통: 프롬프트, 인코딩, 로딩, 배치 생성.
+"""LLM(Kanana) + LoRA 공통: 프롬프트, 인코딩, 로딩, 배치 생성.
 
-프롬프트는 모델의 chat template 을 그대로 쓴다.
-  [|system|][|endofturn|]\n[|user|]{지시문 + 문장}\n[|assistant|]{순화문}[|endofturn|]
-학습할 때 [|assistant|] 뒤(순화문 + 종료 토큰)에만 loss 를 건다.
+프롬프트는 모델의 chat template 을 그대로 쓴다 (Llama 3 형식).
+  <|start_header_id|>user<|end_header_id|>\n\n{지시문 + 문장}<|eot_id|>
+  <|start_header_id|>assistant<|end_header_id|>\n\n{순화문}<|eot_id|>
+학습할 때 assistant 헤더 뒤(순화문 + 종료 토큰 <|eot_id|> = eos)에만 loss 를 건다.
 """
 from pathlib import Path
 
 import torch
 from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaConfig
 
 from preprocess import clean_input
+
+# Kanana-1.5 는 head_dim(128)을 config 에 따로 적어서 hidden_size(1792)가 head 수(24)로 안 나눠떨어진다.
+# transformers 5.4+ 의 config 검사가 head_dim 을 무시하고 이걸 에러로 막아서, 그 검사만 뺀다.
+LlamaConfig.__class_validators__ = [v for v in getattr(LlamaConfig, "__class_validators__", [])
+                                    if v.__name__ != "validate_architecture"]
 
 
 def pick_dtype(precision: str):

@@ -1,7 +1,7 @@
 """LoRA 모델 평가.
 
 python src/evaluate.py [--split test] [--max_samples 0]
-출력: outputs/exaone-lora/eval_{split}.json, eval_{split}_all.csv (모든 행의 입력/정답/출력)
+출력: outputs/kanana-lora/eval_{split}.json, eval_{split}_all.csv (모든 행의 입력/정답/출력)
 지표(type별): chrf, bleu, exact, profanity_out/in, n
 """
 import argparse
@@ -52,8 +52,8 @@ def print_table(results):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default=str(ROOT / "configs" / "exaone_lora.yaml"))
-    ap.add_argument("--adapter", default=str(ROOT / "outputs" / "exaone-lora" / "best"))
+    ap.add_argument("--config", default=str(ROOT / "configs" / "kanana_lora.yaml"))
+    ap.add_argument("--adapter", default=str(ROOT / "outputs" / "kanana-lora" / "best"))
     ap.add_argument("--split", default="test")
     ap.add_argument("--max_samples", type=int, default=0)
     args = ap.parse_args()
