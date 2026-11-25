@@ -7,15 +7,14 @@ python src/build_llm_pairs.py [--exclude 직장_D,게임_C ...]
       data/llm_pairs/build_report.json   사유별 제거 개수, 유형별 남은 개수
 """
 import argparse
-import ast
 import json
 import re
 from collections import Counter
 from pathlib import Path
 
-from augment import load_lexicon
 from common import ROOT
 from preprocess import clean_input, clean_target
+from profanity import find_profanity, profanity_terms
 
 LLM_DIR = ROOT / "data" / "llm_pairs"
 MIN_IN, MAX_IN = 8, 80
@@ -23,11 +22,6 @@ RATIO = (0.5, 1.5)
 JAMO_MAX = 0.3
 SAME_TARGET_MAX = 5
 
-# 워커 프롬프트에 예로 준 욕설 중 사전·PROFANITY 에 없는 것
-EXTRA_PROFANITY = ["염병", "빌어먹을", "엿같", "개소리", "아가리", "처먹", "븅신", "개빡", "개짜증", "씹"]
-# 욕설 문자열을 품은 일반 단어. 검사 전에 지운다 (게이머의 '게이', 불이 꺼져의 '꺼져' 등)
-BENIGN = ["게이머", "게이밍", "게이트", "게이지", "새끼손가락", "걸레질", "영향을 미친", "미친다",
-          "불이 꺼져", "불 꺼져", "화면이 꺼져", "전원이 꺼져", "꺼져 있", "꺼져서", "꺼져버", "다 뒤져", "뒤져 봤", "뒤져봤"]
 FIXED = {"그만좀해", "그런말은하지마", "왜그래", "야너왜그래", "조용히해줘", "저리가줘", "왜그러니",
          "그만해", "하지마", "그러지마", "말조심해"}
 META = re.compile(r"죄송|언어 ?모델|인공지능|순화|input|target|프롬프트|\bAI\b", re.I)
@@ -35,33 +29,6 @@ JAMO = re.compile("[ㄱ-ㅎㅏ-ㅣ]")
 NUM = re.compile(r"\d+")
 LATIN = re.compile(r"[A-Za-z]+")
 FOREIGN = re.compile(r"[぀-ヿ㐀-䶿一-鿿]")  # 가나·한자 (워커가 섞어 쓰는 경우)
-
-
-def evaluate_profanity():
-    """src/evaluate.py 의 PROFANITY 목록 (import 하면 torch 까지 올라와서 소스에서 읽는다)."""
-    tree = ast.parse((ROOT / "src" / "evaluate.py").read_text(encoding="utf-8"))
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "PROFANITY" for t in node.targets):
-            return ast.literal_eval(node.value)
-    raise SystemExit("evaluate.py 에 PROFANITY 없음")
-
-
-def profanity_terms():
-    lex = load_lexicon(ROOT / "configs" / "lexicon.tsv")
-    terms = set(evaluate_profanity()) | set(EXTRA_PROFANITY)
-    for entries in lex.values():
-        for word, _, variants in entries:
-            terms.add(word)
-            terms.update(variants)
-    # 한 글자('개')는 일반 단어 대부분에 들어 있어서 뺀다. '개-' 강조는 EXTRA_PROFANITY 로 일부 잡는다
-    return sorted(t for t in terms if len(t.replace(" ", "")) >= 2)
-
-
-def has_profanity(text, terms):
-    t = text
-    for b in BENIGN:
-        t = t.replace(b, " ")
-    return next((w for w in terms if w in t), None)
 
 
 def known_inputs():
@@ -98,7 +65,7 @@ def check(raw_line, terms):
         return "foreign_script", None, None
     if META.search(inp) or META.search(tgt):
         return "meta_phrase", None, None
-    if has_profanity(tgt, terms):
+    if find_profanity(tgt, terms):
         return "profanity_in_target", None, None
     nonspace = [c for c in tgt if not c.isspace()]
     if len(JAMO.findall(tgt)) / max(1, len(nonspace)) >= JAMO_MAX:
@@ -117,7 +84,7 @@ def main():
     args = ap.parse_args()
     exclude = {c for c in args.exclude.split(",") if c}
 
-    terms = profanity_terms()
+    terms = profanity_terms(ROOT / "configs" / "lexicon.tsv")
     existing = known_inputs()
     drops, kept_by_type, target_count = Counter(), Counter(), Counter()
     seen_inputs, out = set(), []

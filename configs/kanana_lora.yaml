@@ -53,3 +53,9 @@ train:
 
 eval:
   batch_size: 16
+
+bot:                           # src/moderate.py (봇 판단). src/eval_moderate.py 로 테스트셋에서 확인
+  lexicon: configs/lexicon.tsv
+  prefilter: true              # 사전 욕설이 없는 메시지는 모델에 안 넣고 통과
+  max_passes: 2                # 순화 결과에 욕이 남으면 다시 순화하는 최대 횟수
+  min_similarity: 30           # chrF(순화 결과, 욕 뺀 원문)가 이보다 낮으면 다시 올리지 않음 (지어낸 문장 방지)

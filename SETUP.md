@@ -52,6 +52,7 @@ python src/evaluate.py
 - `outputs/kanana-lora/train_log.json` : loss 기록.
 - `outputs/kanana-lora/eval_test.json` : type별 chrF, BLEU, 정상문 유지율, 욕설 잔존율.
 - `outputs/kanana-lora/eval_test_all.csv` : 테스트 전 행의 입력/정답/출력. 엑셀에서 `type`으로 필터링해서 직접 읽어본다.
+- `outputs/kanana-lora/moderate_test.json`, `moderate_test_all.csv` : `src/eval_moderate.py` 결과. 봇 판단(`src/moderate.py`: 1차 필터 → 순화 → 남은 욕 재순화 → 안전장치)을 테스트셋에 돌려서 pass/rewrite/block 비율과 실제로 보이는 문장에 욕이 남은 비율(leak)을 잰다. 설정은 config의 `bot`. `--no-prefilter`로 1차 필터 없이 모든 문장을 모델에 넣은 경우와 비교할 수 있다.
 - 학습 중간에 죽으면 `best/`가 없고 `checkpoints/`에만 남는다. 100 step마다 저장되며 `train.py --resume`으로 이어서 학습한다.
 - 데이터를 다시 만들었으면 옛 `checkpoints/`는 지우고 처음부터 학습한다 (`--resume`은 옛 데이터 기준 체크포인트를 잇는다).
 - 모델은 git에 올리지 말고 `best/` 폴더를 직접 복사하거나 HF Hub에 따로 올린다.
