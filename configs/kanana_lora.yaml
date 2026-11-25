@@ -19,6 +19,9 @@ data:
     lexicon: configs/lexicon.tsv
     n: {train: 6000, valid: 400, test: 400}
   extra_pairs: data/llm_pairs/llm_pairs.jsonl  # 로컬 LLM 생성 쌍 (src/build_llm_pairs.py). 없으면 건너뜀
+  identity_extra:              # 깨끗한 문장을 고치거나 뒷부분을 지우는 걸 줄이려고 identity 비중을 올린다
+    from_llm_targets: true     # LLM 쌍의 정답을 identity(정답->정답)로도 넣기
+    train_repeat: 2            # train 의 identity 를 이 횟수만큼 반복 (valid/test 는 그대로)
 
 model:
   # 카카오 Kanana-1.5 2.1B Instruct (Apache-2.0, Llama 구조). 공개·배포가 자유로운 베이스.

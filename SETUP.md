@@ -39,6 +39,7 @@ python src/evaluate.py
 - `data/`와 `outputs/`는 `.gitignore`에 들어 있어 git에 안 올라간다. clone한 곳에서 이 명령을 한 번 돌려 데이터를 새로 만든다.
 - 시드 고정이라 어느 머신에서 돌려도 같은 split이 나온다. 기준 결과: train 20,205 / valid 1,898 / test 1,866쌍 (합성 쌍 포함).
 - 합성 쌍(`type=synthetic`): `configs/lexicon.tsv`의 욕설 어휘를 정상 문장에 끼우거나 고정 틀에 넣어 만든다. 공개 데이터에 없는 욕설을 모델이 지우지 않고 순화하게 하려는 용도다. 어휘를 늘리려면 이 파일에 줄을 추가하고 `data/` 폴더를 지운 뒤 `prepare_data.py`를 다시 돌린다. 끄려면 `data.augment.enabled: false`.
+- identity 늘리기(`data.identity_extra`): LLM 쌍의 정답을 identity로도 넣고, train의 identity를 `train_repeat`번 반복한다. 깨끗한 문장을 고치거나 뒷부분을 지우는 걸 줄이려는 용도다. train에만 적용해서 valid/test는 이전 결과와 비교할 수 있다.
 
 ## 학습 설정 (`configs/kanana_lora.yaml`)
 - LoRA r=16, lr 2e-4, 3 epoch, 실질 배치 32 (`batch_size 8 × grad_accum 4`).

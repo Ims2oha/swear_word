@@ -178,6 +178,31 @@ def main():
     elif extra:
         print(f"[extra_pairs] {extra} 없음, 건너뜀")
 
+    # 4.7) identity(정상->정상) 늘리기: 모델이 깨끗한 문장을 고치거나 뒷부분을 지우는 걸 줄인다
+    ide = d.get("identity_extra") or {}
+    if ide.get("from_llm_targets"):
+        # LLM 쌍의 정답(새 정상 문장)을 그대로 identity 로. train 에만 넣어서 valid/test 는 이전 결과와 비교 가능하게 둔다
+        rows = splits["train"]
+        existing = {(r["input"], r["target"]) for r in rows}
+        new = []
+        for r in rows:
+            k = (r["target"], r["target"])
+            if r["source"] == "llm" and k not in existing:
+                existing.add(k)
+                new.append(dict(input=r["target"], target=r["target"], source="llm", type="identity",
+                                group=r["group"]))
+        rows += new
+        drops["llm_identity_added:train"] = len(new)
+    repeat = int(ide.get("train_repeat", 1))
+    if repeat > 1:
+        # train 에서만 identity 를 반복해 비중을 올린다 (valid/test 는 평가 기준이라 그대로)
+        ident = [r for r in splits["train"] if r["type"] == "identity"]
+        splits["train"] += [dict(r) for r in ident for _ in range(repeat - 1)]
+        drops["identity_repeated:train"] = len(ident) * (repeat - 1)
+    if ide:
+        for rows in splits.values():
+            rng.shuffle(rows)
+
     # 5) 누수 검사 + 저장
     groups = {s: {r["group"] for r in rows} for s, rows in splits.items()}
     for a, b in [("train", "valid"), ("train", "test"), ("valid", "test")]:
