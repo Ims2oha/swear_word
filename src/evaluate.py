@@ -19,7 +19,7 @@ from profanity import PROFANITY
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-TYPES = ["toxic", "obfuscated", "identity", "synthetic", "multi", "llm"]
+TYPES = ["toxic", "obfuscated", "identity", "synthetic", "multi", "llm", "llm_identity"]
 
 
 def profanity_rate(texts):

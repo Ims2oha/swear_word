@@ -2,7 +2,8 @@
 
 python src/build_llm_pairs.py [--exclude 직장_D,게임_C ...]
 입력: data/llm_pairs/raw/{주제}_{유형}.txt  (한 줄에 {"input","target"} JSON)
-출력: data/llm_pairs/llm_pairs.jsonl     {"input","target","source":"llm","type":"llm","group":target}
+      유형이 IDENTITY_TYPES(G)면 '욕처럼 보이지만 깨끗한 문장'이라 input == target 이어야 한다
+출력: data/llm_pairs/llm_pairs.jsonl     {"input","target","source":"llm","type":"llm"|"llm_identity","group":target}
       data/llm_pairs/review_pool.jsonl   위와 같고 combo(주제_유형) 필드 추가 (검수용)
       data/llm_pairs/build_report.json   사유별 제거 개수, 유형별 남은 개수
 """
@@ -22,6 +23,11 @@ RATIO = (0.5, 1.5)
 JAMO_MAX = 0.3
 SAME_TARGET_MAX = 5
 
+IDENTITY_TYPES = {"G"}
+# G(깨끗한 문장)에 있으면 안 되는 말. 일반 뜻으로도 쓰이는 말(시발점, 졸라서, 쓰레기, 죽어)은 일부러 뺐다
+IDENTITY_REJECT = ["씨발", "ㅅㅂ", "ㅆㅂ", "병신", "개새끼", "좆", "존나", "지랄", "썅", "미친놈", "미친년",
+                   "개꿀", "빡치", "빡쳐", "똥겜", "깽판", "노답", "ㅈ됨"]
+
 FIXED = {"그만좀해", "그런말은하지마", "왜그래", "야너왜그래", "조용히해줘", "저리가줘", "왜그러니",
          "그만해", "하지마", "그러지마", "말조심해"}
 META = re.compile(r"죄송|언어 ?모델|인공지능|순화|input|target|프롬프트|\bAI\b", re.I)
@@ -40,6 +46,26 @@ def known_inputs():
             if r.get("source") != "llm":
                 seen.add(r["input"])
     return seen
+
+
+def check_identity(raw_line):
+    """G 유형: 욕처럼 보이지만 깨끗한 문장. (사유 또는 None, input, target)"""
+    try:
+        o = json.loads(raw_line)
+    except Exception:
+        return "json_error", None, None
+    if not isinstance(o, dict) or not isinstance(o.get("input"), str) or not isinstance(o.get("target"), str):
+        return "missing_field", None, None
+    inp = clean_input(o["input"])
+    if not inp or inp != clean_input(o["target"]):
+        return "identity_changed", None, None
+    if not (MIN_IN <= len(inp) <= MAX_IN):
+        return "input_length", None, None
+    if FOREIGN.search(inp) or META.search(inp):
+        return "foreign_or_meta", None, None
+    if any(w in inp for w in IDENTITY_REJECT):
+        return "identity_has_profanity", None, None
+    return None, inp, inp
 
 
 def check(raw_line, terms):
@@ -98,7 +124,7 @@ def main():
             if combo in exclude:
                 drops["excluded_combo"] += 1
                 continue
-            reason, inp, tgt = check(line, terms)
+            reason, inp, tgt = check_identity(line) if typ in IDENTITY_TYPES else check(line, terms)
             if reason is None and inp in existing:
                 reason = "dup_processed"
             elif reason is None and inp in seen_inputs:
@@ -111,7 +137,8 @@ def main():
             seen_inputs.add(inp)
             target_count[tgt] += 1
             kept_by_type[typ] += 1
-            out.append(dict(input=inp, target=tgt, source="llm", type="llm", group=tgt, combo=combo))
+            out.append(dict(input=inp, target=tgt, source="llm",
+                            type="llm_identity" if typ in IDENTITY_TYPES else "llm", group=tgt, combo=combo))
 
     LLM_DIR.mkdir(parents=True, exist_ok=True)
     with open(LLM_DIR / "llm_pairs.jsonl", "w", encoding="utf-8") as f:

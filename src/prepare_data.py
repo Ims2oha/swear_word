@@ -172,7 +172,8 @@ def main():
                 continue
             existing.add((r["input"], r["target"]))
             s = taken.setdefault(r["group"], hash_split(r["group"], seed, d["kda_split"]))
-            splits[s].append(dict(input=r["input"], target=r["target"], source="llm", type="llm", group=r["group"]))
+            splits[s].append(dict(input=r["input"], target=r["target"], source="llm", type=r.get("type", "llm"),
+                                 group=r["group"]))
             added[s] += 1
         for s in splits:
             drops[f"llm_added:{s}"] = added[s]
