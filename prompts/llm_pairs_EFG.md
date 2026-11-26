@@ -10,9 +10,11 @@
 
 ## 파일 규칙 (`src/build_llm_pairs.py`가 읽는 형식)
 
-- 저장 위치: `data/llm_pairs/raw/{주제}_{유형}.txt` (예: `게임_E.txt`, `직장_G.txt`)
+- 저장 위치: `data/llm_pairs/raw2/{주제}_{유형}.txt` (예: `raw2/게임_E.txt`, `raw2/직장_G.txt`)
+  - `raw/`에는 처음 만든 쌍이 있다. 건드리지 않는다. `build_llm_pairs.py`가 `raw/`와 `raw2/`를 둘 다 읽는다.
+  - 유형 글자가 겹치는지는 `raw/`의 파일 이름을 보고 확인한다.
 - 한 줄에 JSON 하나: `{"input": "...", "target": "..."}`. 다른 글은 쓰지 않는다.
-- 기존 유형 글자와 겹치면 E/F/G 대신 안 쓰는 글자로 바꾼다. G를 바꾸면 `build_llm_pairs.py`의 `IDENTITY_TYPES`도 같이 바꾼다.
+- `raw/`의 기존 유형 글자와 겹치면 E/F/G 대신 안 쓰는 글자로 바꾼다. G를 바꾸면 `build_llm_pairs.py`의 `IDENTITY_TYPES`도 같이 바꾼다.
 - 주제 예: 게임, 직장, 학교, 연애, 스포츠, 뉴스·정치, 음식, 쇼핑, 커뮤니티, 친구 잡담, 가족, 연예인
 - 양: 주제마다 유형별 150~300줄. 한 번에 30줄씩 요청하고 여러 번 돌린다.
 

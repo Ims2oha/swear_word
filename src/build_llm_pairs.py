@@ -1,7 +1,8 @@
-"""로컬 LLM 워커가 만든 순화 쌍(data/llm_pairs/raw/*.txt)을 걸러서 학습용 파일로 만든다.
+"""로컬 LLM 워커가 만든 순화 쌍(data/llm_pairs/raw*/*.txt)을 걸러서 학습용 파일로 만든다.
 
-python src/build_llm_pairs.py [--exclude 직장_D,게임_C ...]
-입력: data/llm_pairs/raw/{주제}_{유형}.txt  (한 줄에 {"input","target"} JSON)
+python src/build_llm_pairs.py [--exclude 직장_D,게임_C ...] [--raw_dirs raw,raw2]
+입력: data/llm_pairs/{raw,raw2}/{주제}_{유형}.txt  (한 줄에 {"input","target"} JSON)
+      raw = 처음 만든 쌍, raw2 = 실패 유형을 겨냥해 새로 만든 쌍 (prompts/llm_pairs_EFG.md)
       유형이 IDENTITY_TYPES(G)면 '욕처럼 보이지만 깨끗한 문장'이라 input == target 이어야 한다
 출력: data/llm_pairs/llm_pairs.jsonl     {"input","target","source":"llm","type":"llm"|"llm_identity","group":target}
       data/llm_pairs/review_pool.jsonl   위와 같고 combo(주제_유형) 필드 추가 (검수용)
@@ -107,6 +108,7 @@ def check(raw_line, terms):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exclude", default="", help="버릴 조합 (쉼표). 예: 직장_D,게임_C")
+    ap.add_argument("--raw_dirs", default="raw,raw2", help="읽을 원본 폴더 (data/llm_pairs 아래, 쉼표). 없는 폴더는 건너뜀")
     args = ap.parse_args()
     exclude = {c for c in args.exclude.split(",") if c}
 
@@ -114,10 +116,11 @@ def main():
     existing = known_inputs()
     drops, kept_by_type, target_count = Counter(), Counter(), Counter()
     seen_inputs, out = set(), []
-    files = sorted((LLM_DIR / "raw").glob("*.txt"))
+    raw_dirs = [LLM_DIR / d for d in args.raw_dirs.split(",") if d]
+    files = [p for d in raw_dirs for p in sorted(d.glob("*.txt"))]
     for path in files:
-        combo = path.stem
-        typ = combo.rsplit("_", 1)[1]
+        combo = path.stem if path.parent.name == "raw" else f"{path.parent.name}/{path.stem}"
+        typ = path.stem.rsplit("_", 1)[1]
         for line in path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
@@ -147,7 +150,7 @@ def main():
     with open(LLM_DIR / "review_pool.jsonl", "w", encoding="utf-8") as f:
         for r in out:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    report = {"files": len(files), "kept": len(out), "kept_by_type": dict(sorted(kept_by_type.items())),
+    report = {"raw_dirs": [d.name for d in raw_dirs if d.exists()], "files": len(files), "kept": len(out), "kept_by_type": dict(sorted(kept_by_type.items())),
               "drops": dict(drops.most_common()), "excluded": sorted(exclude)}
     (LLM_DIR / "build_report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
