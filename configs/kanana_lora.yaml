@@ -19,6 +19,10 @@ data:
     lexicon: configs/lexicon.tsv
     n: {train: 6000, valid: 400, test: 400}
   extra_pairs: data/llm_pairs/llm_pairs.jsonl  # 로컬 LLM 생성 쌍 (src/build_llm_pairs.py). 없으면 건너뜀
+  obfuscate:                   # 규칙 변형(난독화) 쌍 (src/obfuscate.py). 욕 문장의 입력만 변형, 정답은 그대로. train 에만
+    enabled: true
+    n: 6000
+    from_types: [toxic, synthetic, multi, llm]
   identity_extra:              # 깨끗한 문장을 고치거나 뒷부분을 지우는 걸 줄이려고 identity 비중을 올린다
     from_llm_targets: true     # LLM 쌍의 정답을 identity(정답->정답)로도 넣기
     train_repeat: 2            # train 의 identity 를 이 횟수만큼 반복 (valid/test 는 그대로)

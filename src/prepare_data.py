@@ -18,7 +18,9 @@ from huggingface_hub import hf_hub_download
 
 from augment import load_lexicon, make_synthetic
 from common import ROOT, read_jsonl, write_jsonl
+from obfuscate import obfuscate
 from preprocess import clean_input, clean_target
+from profanity import profanity_terms
 
 # LLM 거절·메타 문구 (일반 한국어 "할 수 없다" 같은 표현은 넣지 않음)
 META = re.compile(
@@ -177,6 +179,26 @@ def main():
             rng.shuffle(splits[s])
     elif extra:
         print(f"[extra_pairs] {extra} 없음, 건너뜀")
+
+    # 4.65) 규칙 변형(난독화) 쌍: 욕 문장의 입력만 변형하고 정답은 그대로. train 에만 넣는다 (KOTOX 변형 test 는 그대로 평가 기준)
+    obf = d.get("obfuscate") or {}
+    if obf.get("enabled"):
+        terms = profanity_terms(ROOT / aug.get("lexicon", "configs/lexicon.tsv"))
+        orng = random.Random(f"{seed}:obfuscate")
+        pool = [r for r in splits["train"] if r["type"] in set(obf.get("from_types", ["toxic", "synthetic", "multi", "llm"]))]
+        existing = {(r["input"], r["target"]) for r in splits["train"]}
+        new, tries = [], 0
+        while pool and len(new) < obf["n"] and tries < obf["n"] * 5:
+            tries += 1
+            r = orng.choice(pool)
+            inp = obfuscate(r["input"], orng, terms)
+            if not inp or len(inp) > d["max_len"] or (inp, r["target"]) in existing:
+                continue
+            existing.add((inp, r["target"]))
+            new.append(dict(input=inp, target=r["target"], source="obfuscate", type="obf_aug", group=r["group"]))
+        splits["train"] += new
+        rng.shuffle(splits["train"])
+        drops["obfuscate_added:train"] = len(new)
 
     # 4.7) identity(정상->정상) 늘리기: 모델이 깨끗한 문장을 고치거나 뒷부분을 지우는 걸 줄인다
     ide = d.get("identity_extra") or {}

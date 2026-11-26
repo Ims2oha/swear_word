@@ -39,6 +39,7 @@ python src/evaluate.py
 - `data/`와 `outputs/`는 `.gitignore`에 들어 있어 git에 안 올라간다. clone한 곳에서 이 명령을 한 번 돌려 데이터를 새로 만든다.
 - 시드 고정이라 어느 머신에서 돌려도 같은 split이 나온다. 기준 결과: train 20,205 / valid 1,898 / test 1,866쌍 (합성 쌍 포함).
 - 합성 쌍(`type=synthetic`): `configs/lexicon.tsv`의 욕설 어휘를 정상 문장에 끼우거나 고정 틀에 넣어 만든다. 공개 데이터에 없는 욕설을 모델이 지우지 않고 순화하게 하려는 용도다. 15%는 한 문장에 욕설 2~3개를 넣은 쌍(`type=multi`)으로, 첫 번째 욕만 고치고 나머지를 남기는 문제를 줄이려는 것이다. 어휘를 늘리려면 이 파일에 줄을 추가하고 `data/` 폴더를 지운 뒤 `prepare_data.py`를 다시 돌린다. 끄려면 `data.augment.enabled: false`.
+- 규칙 변형 쌍(`data.obfuscate`, `type=obf_aug`): `src/obfuscate.py`가 욕 문장의 입력을 KOTOX처럼 변형(받침 추가, 된소리, y모음, 원문자, 자모 분리, 한자·로마자, 숫자·X, 기호, 띄어쓰기 없애기)하고 정답은 그대로 둔다. train에만 넣어서 KOTOX 변형 test로 효과를 잰다.
 - identity 늘리기(`data.identity_extra`): LLM 쌍의 정답을 identity로도 넣고, train의 identity를 `train_repeat`번 반복한다. 깨끗한 문장을 고치거나 뒷부분을 지우는 걸 줄이려는 용도다. train에만 적용해서 valid/test는 이전 결과와 비교할 수 있다.
 
 ## 학습 설정 (`configs/kanana_lora.yaml`)
