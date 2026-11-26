@@ -16,7 +16,7 @@ import sacrebleu
 
 from common import ROOT
 from llm_common import rewrite
-from profanity import find_profanity, profanity_terms, strip_profanity
+from profanity import find_profanity, looks_obfuscated, profanity_terms, strip_profanity
 
 _NORM = re.compile(r"[\s.,!?~…]+")
 
@@ -31,24 +31,25 @@ class Decision:
 
 
 class Moderator:
-    def __init__(self, model, tok, model_cfg, device, terms, prefilter=True, max_passes=2,
-                 min_similarity=30.0, batch_size=16):
+    def __init__(self, model, tok, model_cfg, device, terms, prefilter=True, obfuscation_check=True,
+                 max_passes=2, min_similarity=30.0, batch_size=16):
         self.model, self.tok, self.model_cfg, self.device = model, tok, model_cfg, device
-        self.terms, self.prefilter, self.max_passes = terms, prefilter, max_passes
-        self.min_similarity, self.batch_size = min_similarity, batch_size
+        self.terms, self.prefilter, self.obfuscation_check = terms, prefilter, obfuscation_check
+        self.max_passes, self.min_similarity, self.batch_size = max_passes, min_similarity, batch_size
 
     @classmethod
     def from_config(cls, cfg, model, tok, device, **override):
         b = {**(cfg.get("bot") or {}), **override}
         return cls(model, tok, cfg["model"], device, profanity_terms(ROOT / b.get("lexicon", "configs/lexicon.tsv")),
-                   prefilter=b.get("prefilter", True), max_passes=b.get("max_passes", 2),
+                   prefilter=b.get("prefilter", True), obfuscation_check=b.get("obfuscation_check", True),
+                   max_passes=b.get("max_passes", 2),
                    min_similarity=b.get("min_similarity", 30.0), batch_size=b.get("batch_size", 16))
 
     def decide(self, texts):
         res = [None] * len(texts)
         todo = []
         for i, t in enumerate(texts):
-            if self.prefilter and not find_profanity(t, self.terms):
+            if self.prefilter and not self._suspicious(t):
                 res[i] = Decision("pass", t, "prefilter_clean", 0, 100.0)
             else:
                 todo.append(i)
@@ -68,6 +69,10 @@ class Moderator:
         for i in todo:
             res[i] = self._judge(texts[i], cur[i], passes[i])
         return res
+
+    def _suspicious(self, text):
+        """1차 필터: 사전 욕설이 있거나 변형 흔적이 있으면 모델로 보낸다."""
+        return bool(find_profanity(text, self.terms)) or (self.obfuscation_check and looks_obfuscated(text))
 
     def _judge(self, text, out, passes):
         sim = sacrebleu.sentence_chrf(out, [strip_profanity(text, self.terms) or text]).score

@@ -1,6 +1,6 @@
 """봇 판단(src/moderate.py)을 테스트셋에 돌려서 실제로 사람들한테 보이는 결과를 잰다.
 
-python src/eval_moderate.py [--split test] [--no-prefilter] [--max_passes 2] [--min_similarity 30]
+python src/eval_moderate.py [--split test] [--no-prefilter] [--no-obfuscation-check] [--max_passes 2] [--min_similarity 30]
 출력: outputs/kanana-lora/moderate_{split}.json, moderate_{split}_all.csv
 
 지표(type별)
@@ -47,6 +47,7 @@ def main():
     ap.add_argument("--split", default="test")
     ap.add_argument("--max_samples", type=int, default=0)
     ap.add_argument("--no-prefilter", action="store_true", help="1차 필터 없이 모든 문장을 모델에 넣기")
+    ap.add_argument("--no-obfuscation-check", action="store_true", help="1차 필터에서 변형 흔적 검사 끄기")
     ap.add_argument("--max_passes", type=int, default=None)
     ap.add_argument("--min_similarity", type=float, default=None)
     args = ap.parse_args()
@@ -59,6 +60,8 @@ def main():
     override = {"batch_size": cfg["eval"]["batch_size"]}
     if args.no_prefilter:
         override["prefilter"] = False
+    if args.no_obfuscation_check:
+        override["obfuscation_check"] = False
     if args.max_passes is not None:
         override["max_passes"] = args.max_passes
     if args.min_similarity is not None:
@@ -69,7 +72,8 @@ def main():
     mod = Moderator.from_config(cfg, model, tok, device, **override)
     decs = mod.decide([r["input"] for r in rows])
 
-    results = {"settings": {"prefilter": mod.prefilter, "max_passes": mod.max_passes,
+    results = {"settings": {"prefilter": mod.prefilter, "obfuscation_check": mod.obfuscation_check,
+                            "max_passes": mod.max_passes,
                             "min_similarity": mod.min_similarity},
                "overall": summarize(rows, decs)}
     for t in TYPES:
