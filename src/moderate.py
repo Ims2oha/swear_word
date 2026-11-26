@@ -16,7 +16,7 @@ import sacrebleu
 
 from common import ROOT
 from llm_common import rewrite
-from profanity import AMBIGUOUS, find_profanity, looks_obfuscated, profanity_terms, strip_profanity
+from profanity import AMBIGUOUS, AMBIGUOUS_INSULT, find_profanity, looks_obfuscated, profanity_terms, strip_profanity
 
 _NORM = re.compile(r"[\s.,!?~…]+")
 
@@ -35,8 +35,8 @@ class Moderator:
                  max_passes=2, min_similarity=30.0, batch_size=16):
         self.model, self.tok, self.model_cfg, self.device = model, tok, model_cfg, device
         self.terms, self.prefilter, self.obfuscation_check = terms, prefilter, obfuscation_check
-        # 순화 결과에 욕이 남았는지 볼 때는 일반 뜻으로도 쓰이는 말(AMBIGUOUS)을 뺀다
-        self.residual_terms = [t for t in terms if t not in AMBIGUOUS]
+        # 순화 결과에 욕이 남았는지 볼 때는 일반 뜻으로도 쓰이는 말(AMBIGUOUS)을 빼고, 욕하는 형태만 넣는다
+        self.residual_terms = [t for t in terms if t not in AMBIGUOUS] + AMBIGUOUS_INSULT
         self.max_passes, self.min_similarity, self.batch_size = max_passes, min_similarity, batch_size
 
     @classmethod
