@@ -64,14 +64,6 @@ def looks_obfuscated(text):
             or bool(_HAN.search(text)))
 
 
-def mask_profanity(text, terms):
-    """욕설 문자열을 같은 길이의 *로 가린다 (일반 단어 BENIGN 안의 것은 그대로)."""
-    for w in sorted(terms, key=len, reverse=True):
-        if w in _mask_benign(text):
-            text = text.replace(w, "*" * len(w.replace(" ", "")))
-    return text
-
-
 def strip_profanity(text, terms):
     """욕설 문자열을 지운 문장 (순화 결과와 비교할 기준)."""
     for w in terms:

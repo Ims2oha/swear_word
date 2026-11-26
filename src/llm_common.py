@@ -59,27 +59,42 @@ def encode_example(tok, model_cfg: dict, row: dict):
 
 
 @torch.no_grad()
-def _generate_batch(model, tok, prompts, max_new_tokens, device):
+def _generate_batch(model, tok, prompts, max_new_tokens, device, n=1, temperature=None, top_p=None):
+    """prompts -> 문장 리스트. n>1 이면 프롬프트마다 n개씩 샘플링해서 프롬프트 순서대로 이어 붙인다."""
     enc = [tok(p, add_special_tokens=False)["input_ids"] for p in prompts]
     width, pad = max(len(e) for e in enc), tok.pad_token_id
     ids = torch.tensor([[pad] * (width - len(e)) + e for e in enc]).to(device)        # 왼쪽 패딩
     mask = torch.tensor([[0] * (width - len(e)) + [1] * len(e) for e in enc]).to(device)
+    gen = ({"do_sample": True, "temperature": temperature, "top_p": top_p or 1.0, "num_return_sequences": n}
+           if temperature else {"do_sample": False})
     out = model.generate(input_ids=ids, attention_mask=mask, max_new_tokens=max_new_tokens,
-                         do_sample=False, eos_token_id=tok.eos_token_id, pad_token_id=pad)
+                         eos_token_id=tok.eos_token_id, pad_token_id=pad, **gen)
     return [tok.decode(o[width:], skip_special_tokens=True).strip() for o in out]
 
 
-def rewrite(model, tok, model_cfg: dict, texts, device, batch_size: int = 16):
-    """texts -> 순화문 리스트 (입력 순서 유지). 길이순 정렬해서 패딩 낭비를 줄인다."""
+def _run(model, tok, model_cfg, texts, device, batch_size, n=1, **gen):
+    """길이순 정렬해서 배치로 생성 (패딩 낭비를 줄인다). 입력 순서대로 문장 n개씩 리스트로 돌려준다."""
     prompts = [build_prompt(tok, model_cfg["prompt"], t) for t in texts]
     order = sorted(range(len(texts)), key=lambda i: len(texts[i]))
     outs = [None] * len(texts)
     for s in range(0, len(order), batch_size):
         idx = order[s:s + batch_size]
-        res = _generate_batch(model, tok, [prompts[i] for i in idx], model_cfg["max_new_tokens"], device)
-        for i, o in zip(idx, res):
-            outs[i] = o
+        res = _generate_batch(model, tok, [prompts[i] for i in idx], model_cfg["max_new_tokens"], device, n=n, **gen)
+        for k, i in enumerate(idx):
+            outs[i] = res[k * n:(k + 1) * n]
     return outs
+
+
+def rewrite(model, tok, model_cfg: dict, texts, device, batch_size: int = 16):
+    """texts -> 순화문 리스트 (입력 순서 유지, greedy)."""
+    return [o[0] for o in _run(model, tok, model_cfg, texts, device, batch_size)]
+
+
+def rewrite_samples(model, tok, model_cfg: dict, texts, device, n=4, temperature=0.8, top_p=0.95,
+                    batch_size: int = 16):
+    """texts -> 문장마다 순화 후보 n개 (샘플링). greedy 결과가 실패했을 때 다른 순화를 찾는 용도."""
+    return _run(model, tok, model_cfg, texts, device, max(1, batch_size // n), n=n,
+                temperature=temperature, top_p=top_p)
 
 
 def load_for_inference(cfg: dict, adapter_dir, device):
