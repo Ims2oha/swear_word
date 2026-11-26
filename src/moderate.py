@@ -16,7 +16,7 @@ import sacrebleu
 
 from common import ROOT
 from llm_common import rewrite
-from profanity import find_profanity, looks_obfuscated, profanity_terms, strip_profanity
+from profanity import AMBIGUOUS, find_profanity, looks_obfuscated, profanity_terms, strip_profanity
 
 _NORM = re.compile(r"[\s.,!?~…]+")
 
@@ -35,6 +35,8 @@ class Moderator:
                  max_passes=2, min_similarity=30.0, batch_size=16):
         self.model, self.tok, self.model_cfg, self.device = model, tok, model_cfg, device
         self.terms, self.prefilter, self.obfuscation_check = terms, prefilter, obfuscation_check
+        # 순화 결과에 욕이 남았는지 볼 때는 일반 뜻으로도 쓰이는 말(AMBIGUOUS)을 뺀다
+        self.residual_terms = [t for t in terms if t not in AMBIGUOUS]
         self.max_passes, self.min_similarity, self.batch_size = max_passes, min_similarity, batch_size
 
     @classmethod
@@ -62,7 +64,7 @@ class Moderator:
             nxt = []
             for i, o in zip(pending, outs):
                 cur[i], passes[i] = o, passes[i] + 1
-                if find_profanity(o, self.terms) and passes[i] < self.max_passes:
+                if find_profanity(o, self.residual_terms) and passes[i] < self.max_passes:
                     nxt.append(i)
             pending = nxt
 
@@ -76,7 +78,7 @@ class Moderator:
 
     def _judge(self, text, out, passes):
         sim = sacrebleu.sentence_chrf(out, [strip_profanity(text, self.terms) or text]).score
-        if find_profanity(out, self.terms):
+        if find_profanity(out, self.residual_terms):
             return Decision("block", out, "residual_profanity", passes, sim)
         if _NORM.sub("", out) == _NORM.sub("", text):
             return Decision("pass", text, "unchanged", passes, sim)

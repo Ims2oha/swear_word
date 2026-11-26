@@ -5,6 +5,7 @@
 # group   : 집단 비하 표현 (중립 표현으로 치환)
 # family  : "네 엄마 ~" 틀에 쓰는 가족 비하 표현
 # phrase  : 문장 단위 욕 -> 순화 표현
+# detect  : 합성 틀에 안 맞는 속어. 합성 데이터는 안 만들고 욕설 검사(봇의 잔존 검사, LLM 쌍 필터)에만 쓴다
 interj	씨발		시발,씨팔,씨바,ㅅㅂ,ㅆㅂ,시1발,씨1발,씨이발
 interj	아 씨발		아 시발,아 ㅅㅂ
 interj	지랄		ㅈㄹ
@@ -70,3 +71,15 @@ phrase	눈깔 안 깔아?	똑바로 봐
 phrase	아가리 닥쳐	조용히 해줘
 phrase	개같네	별로네
 phrase	좆나 웃기네	정말 웃기네
+interj	엠창		엠창인생
+insult	씹선비	깐깐한 사람	씹썬비
+insult	오줌싸개	
+insult	똥개	강아지
+group	깜씨	흑인	깜둥이
+detect	빨통
+detect	ㅈ됨		ㅈ된,ㅈ되
+detect	빡치		빡쳐,빡침,빡친
+detect	개꿀	
+detect	똥겜
+detect	깽판
+detect	노답
