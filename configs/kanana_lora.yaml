@@ -58,5 +58,6 @@ bot:                           # src/moderate.py (봇 판단). src/eval_moderate
   lexicon: configs/lexicon.tsv
   prefilter: false             # true = 사전 욕설·변형 흔적이 없는 메시지는 모델에 안 넣고 통과. false = 모든 메시지를 모델에
   obfuscation_check: true      # 1차 필터에서 변형 흔적(낱자모·특수기호·한영 붙여쓰기·한자)이 있으면 모델로 보냄
-  max_passes: 2                # 순화 결과에 욕이 남으면 다시 순화하는 최대 횟수
+  self_check: true             # 순화 결과를 모델에 다시 넣어 또 바뀌면 더 순화 (단어 목록 없이 모델 판단으로 잔존 검사)
+  max_passes: 3                # 메시지당 모델 최대 호출 수. self_check 에서 이 안에 결과가 안정되지 않으면 block
   min_similarity: 30           # chrF(순화 결과, 욕 뺀 원문)가 이보다 낮으면 다시 올리지 않음 (지어낸 문장 방지)
